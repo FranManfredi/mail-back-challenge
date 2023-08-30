@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  role      Role      @default(USER)
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  mails     Mails[]
+  recived   Recives[]  
+}
+model Mails {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  from      User      @relation(fields: [userId], references: [id]) 
+  userId    Int       
+  subject   String
+  body      String
+  to        Recives[]
+}
+
+model Recives {
+  id        Int       @id @default(autoincrement())
+  to        User      @relation(fields: [userId], references: [id]) 
+  userId    Int       // este no es unico porque un usuario puede recibir varios correos
+  mail      Mails     @relation(fields: [mailId], references: [id])
+  mailId    Int       // este si es unico porque un correo solo puede ser recibido una vez
+}
+
+enum Role {
+  USER
+  ADMIN
+}
