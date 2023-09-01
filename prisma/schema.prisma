@@ -35,7 +35,7 @@ model Recives {
   to        User      @relation(fields: [userId], references: [id]) 
   userId    Int       // este no es unico porque un usuario puede recibir varios correos
   mail      Mails     @relation(fields: [mailId], references: [id])
-  mailId    Int       // este si es unico porque un correo solo puede ser recibido una vez
+  mailId    Int       // este no es unico porque un correo puede ser recibido por varios usuarios
 }
 
 enum Role {

@@ -30,7 +30,7 @@ router.post("/sendEmail", async (req, res) => {
     }
 
     await mg.messages().send({
-        from: `${user.email} <emailChallenge@siriusChallenge.com>`,
+        from: `emailChallenge <${user.email}>`,
         to: recivers,
         subject: subject,
         text: body
@@ -42,11 +42,9 @@ router.post("/sendEmail", async (req, res) => {
         }
         else {
             console.log(body);
+            return res.status(200).send( postEmail(user, subject, body, userTo) );
         }
     })
-    
-    return res.status(200).send( await postEmail(user, subject, body, userTo) );
-    
 });
 
 router.get("/getEmails", async (req, res) => {
