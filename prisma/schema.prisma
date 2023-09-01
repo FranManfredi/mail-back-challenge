@@ -19,6 +19,7 @@ model User {
   mails     Mails[]
   recived   Recives[]  
 }
+
 model Mails {
   id        Int       @id @default(autoincrement())
   createdAt DateTime  @default(now())
