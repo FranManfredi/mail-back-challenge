@@ -2,16 +2,16 @@
   "name": "mail-back-challenge",
   "version": "1.0.0",
   "description": "",
-  "main": "main.js",
-  "type": "module",
+  "main": "app.js",
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node typescriptSrc/app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.2.0",
+    "@sendgrid/mail": "^7.7.0",
     "@types/mailgun-js": "^0.22.13",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",

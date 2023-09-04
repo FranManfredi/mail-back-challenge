@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { validateToken, decodeToken} from "../client/jwtClient.js";
 import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../client/prismaClient.js";
-import mailgun from 'mailgun-js';
+import mailgun = require('mailgun-js');
+import * as sendGridMail from '@sendgrid/mail';
 
 const router = Router();
 
@@ -9,6 +10,8 @@ const mg = mailgun({
     apiKey: process.env.MAILGUN_API_KEY ?? "",
     domain: process.env.MAILGUN_DOMAIN ?? "",
   });
+
+sendGridMail.setApiKey(process.env.SEND_GRID_KEY ?? "");
 
 router.post("/sendEmail", async (req, res) => {
     const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
@@ -48,14 +51,14 @@ router.post("/sendEmail", async (req, res) => {
         subject: subject,
         text: body
     }
-    , (error, thisbody) => {
+    , async (error, thisbody) => {
         if (error) {
             console.log(error);
-            res.status(500).send(error);
+            return res.status(400).send(error);
         }
         else {
             console.log(thisbody);
-            return res.status(200).send( postEmail(user, subject, body, userTo) );
+            return res.status(200).send( await postEmail(user, subject, body, userTo) );
         }
     })
 });

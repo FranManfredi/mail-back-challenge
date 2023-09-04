@@ -1,4 +1,4 @@
-import JsonWebToken  from "jsonwebtoken";
+import * as JsonWebToken  from "jsonwebtoken";
 
 const jwt = JsonWebToken;
 const secret = process.env.JWT_SECRET_KEY ?? "";

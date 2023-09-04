@@ -15,7 +15,7 @@ router.get("/stats", async (req, res) => {
     } catch (error) {
         return res.status(403).send("Invalid token");
     }
-    const decodedToken =  await decodeToken(token);
+    const decodedToken =  await decodeToken(token) as {role: string, username: string} ?? {role: "USER", username: ""};
     if (decodedToken.role !== "ADMIN") {
         return res.status(403).send("Invalid role");
     }

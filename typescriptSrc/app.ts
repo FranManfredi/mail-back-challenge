@@ -1,4 +1,4 @@
-import express from "express";
+import express = require("express");
 import authController from "./routes/authController";
 import adminController from "./routes/adminController";
 import userController from "./routes/userController";
