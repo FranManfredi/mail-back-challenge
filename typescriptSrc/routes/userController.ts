@@ -15,7 +15,7 @@ const mg = mailgun({
 const transporter = nodemailer.createTransport({
     host: "outlook.com",
     auth: {
-        user: "franmanfredi@hotmail.com",
+        user: process.env.SMTP_MAIL ?? "",
         pass: process.env.SMTP_PASS ?? ""
     }
 });
@@ -63,7 +63,7 @@ router.post("/sendEmail", async (req, res) => {
         if (error) {
             console.log(error);
             transporter.sendMail({
-                from: `${user.email} <franmanfredi@hotmail.com>`,
+                from: `${user.email} <${process.env.SMTP_MAIL ?? ""}>`,
                 to: recivers,
                 subject: subject,
                 text: body
