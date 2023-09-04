@@ -1,7 +1,7 @@
 import JsonWebToken  from "jsonwebtoken";
 
 const jwt = JsonWebToken;
-const secret = process.env.JWT_SECRET_KEY;
+const secret = process.env.JWT_SECRET_KEY ?? "";
 
 
 export async function generateToken( user: {role: string, email: string} ) {

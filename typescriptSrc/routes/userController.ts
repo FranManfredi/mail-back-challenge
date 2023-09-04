@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { validateToken, decodeToken} from "../../src/client/jwtClient.js";
-import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../../src/client/prismaClient.js";
+import { validateToken, decodeToken} from "../client/jwtClient.js";
+import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../client/prismaClient.js";
 import mailgun from 'mailgun-js';
 
 const router = Router();
@@ -11,7 +11,7 @@ const mg = mailgun({
   });
 
 router.post("/sendEmail", async (req, res) => {
-    const {subject, body, recivers} = req.body;
+    const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
     const ftoken = req.headers.authorization ?? "";
     if (ftoken === "") {
         return res.status(403).send("Invalid token");
@@ -24,9 +24,13 @@ router.post("/sendEmail", async (req, res) => {
         return res.status(403).send("Invalid token");
     }
 
-    const decodedToken =  await decodeToken(token);
+    const decodedToken =  await decodeToken(token) as {role: string, username: string};
 
-    const user = await getUserByEmail( decodedToken?.username );
+    if ( !decodedToken ){
+        return res.status(401).send("User not found");
+    }
+
+    const user = await getUserByEmail( decodedToken.username );
 
     const userTo = await getUsersByEmail(recivers);
 
@@ -44,13 +48,13 @@ router.post("/sendEmail", async (req, res) => {
         subject: subject,
         text: body
     }
-    , (error, body) => {
+    , (error, thisbody) => {
         if (error) {
             console.log(error);
             res.status(500).send(error);
         }
         else {
-            console.log(body);
+            console.log(thisbody);
             return res.status(200).send( postEmail(user, subject, body, userTo) );
         }
     })
@@ -70,9 +74,13 @@ router.get("/getEmails", async (req, res) => {
         return res.status(403).send("Invalid token");
     }
 
-    const decodedToken =  await decodeToken(token);
+    const decodedToken =  await decodeToken(token) as {role: string, username: string};
 
-    const user = await getUserByEmail( decodedToken?.username );
+    if ( !decodedToken ){
+        return res.status(401).send("User not found");
+    }
+
+    const user = await getUserByEmail( decodedToken.username );
 
     if ( !user ){
         return res.status(401).send("User not found");
