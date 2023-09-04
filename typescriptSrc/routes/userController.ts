@@ -2,7 +2,7 @@ import { Router } from "express";
 import { validateToken, decodeToken} from "../client/jwtClient.js";
 import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../client/prismaClient.js";
 import mailgun = require('mailgun-js');
-import * as sendGridMail from '@sendgrid/mail';
+import nodemailer = require('nodemailer');
 
 const router = Router();
 
@@ -11,7 +11,15 @@ const mg = mailgun({
     domain: process.env.MAILGUN_DOMAIN ?? "",
   });
 
-sendGridMail.setApiKey(process.env.SEND_GRID_KEY ?? "");
+
+const transporter = nodemailer.createTransport({
+    host: "outlook.com",
+    auth: {
+        user: "franmanfredi@hotmail.com",
+        pass: process.env.SMTP_PASS ?? ""
+    }
+});
+
 
 router.post("/sendEmail", async (req, res) => {
     const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
@@ -54,7 +62,21 @@ router.post("/sendEmail", async (req, res) => {
     , async (error, thisbody) => {
         if (error) {
             console.log(error);
-            return res.status(400).send(error);
+            transporter.sendMail({
+                from: `${user.email} <franmanfredi@hotmail.com>`,
+                to: recivers,
+                subject: subject,
+                text: body
+            }, async (err, info) => {
+                if (err) {
+                    console.log(err);
+                    return res.status(400).send(err);
+                }
+                else {
+                    console.log(info);
+                    return res.status(200).send( await postEmail(user, subject, body, userTo));
+                }
+            });
         }
         else {
             console.log(thisbody);

@@ -187,35 +187,52 @@ function getEmails(id) {
 exports.getEmails = getEmails;
 function getStats() {
     return __awaiter(this, void 0, void 0, function () {
-        var users, mailCountsByUser, error_1;
+        var now, startOfToday, endOfToday, users, mailCountsByUser, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
+                    now = new Date();
+                    startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+                    endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, prisma.user.findMany({
                             select: {
                                 id: true,
                                 email: true,
-                                recived: {
+                                mails: {
                                     select: {
-                                        id: true,
-                                    },
+                                        createdAt: true,
+                                    }
                                 },
                             },
+                            where: {
+                                mails: {
+                                    some: {
+                                        createdAt: {
+                                            gte: startOfToday,
+                                            lte: endOfToday
+                                        }
+                                    }
+                                }
+                            }
                         })];
-                case 1:
+                case 2:
                     users = _a.sent();
                     mailCountsByUser = users.map(function (user) { return ({
                         userId: user.id,
                         email: user.email,
-                        mailCount: user.recived.length,
+                        mailCount: {
+                            count: user.mails.filter(function (mail) { return mail.createdAt >= startOfToday && mail.createdAt <= endOfToday; }).length,
+                        },
                     }); });
                     return [2 /*return*/, mailCountsByUser];
-                case 2:
+                case 3:
                     error_1 = _a.sent();
                     console.error('Error:', error_1);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     });

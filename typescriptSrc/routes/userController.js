@@ -41,13 +41,19 @@ var express_1 = require("express");
 var jwtClient_js_1 = require("../client/jwtClient.js");
 var prismaClient_js_1 = require("../client/prismaClient.js");
 var mailgun = require("mailgun-js");
-var sendGridMail = require("@sendgrid/mail");
+var nodemailer = require("nodemailer");
 var router = (0, express_1.Router)();
 var mg = mailgun({
     apiKey: (_a = process.env.MAILGUN_API_KEY) !== null && _a !== void 0 ? _a : "",
     domain: (_b = process.env.MAILGUN_DOMAIN) !== null && _b !== void 0 ? _b : "",
 });
-sendGridMail.setApiKey((_c = process.env.SEND_GRID_KEY) !== null && _c !== void 0 ? _c : "");
+var transporter = nodemailer.createTransport({
+    host: "outlook.com",
+    auth: {
+        user: "franmanfredi@hotmail.com",
+        pass: (_c = process.env.SMTP_PASS) !== null && _c !== void 0 ? _c : ""
+    }
+});
 router.post("/sendEmail", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, subject, body, recivers, ftoken, token, error_1, decodedToken, user, userTo;
     var _b;
@@ -102,12 +108,34 @@ router.post("/sendEmail", function (req, res) { return __awaiter(void 0, void 0,
                                 case 0:
                                     if (!error) return [3 /*break*/, 1];
                                     console.log(error);
-                                    return [2 /*return*/, res.status(400).send(error)];
+                                    transporter.sendMail({
+                                        from: "".concat(user.email, " <franmanfredi@hotmail.com>"),
+                                        to: recivers,
+                                        subject: subject,
+                                        text: body
+                                    }, function (err, info) { return __awaiter(void 0, void 0, void 0, function () {
+                                        var _a, _b;
+                                        return __generator(this, function (_c) {
+                                            switch (_c.label) {
+                                                case 0:
+                                                    if (!err) return [3 /*break*/, 1];
+                                                    console.log(err);
+                                                    return [2 /*return*/, res.status(400).send(err)];
+                                                case 1:
+                                                    console.log(info);
+                                                    _b = (_a = res.status(200)).send;
+                                                    return [4 /*yield*/, (0, prismaClient_js_1.postEmail)(user, subject, body, userTo)];
+                                                case 2: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
+                                            }
+                                        });
+                                    }); });
+                                    return [3 /*break*/, 3];
                                 case 1:
                                     console.log(thisbody);
                                     _b = (_a = res.status(200)).send;
                                     return [4 /*yield*/, (0, prismaClient_js_1.postEmail)(user, subject, body, userTo)];
                                 case 2: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
+                                case 3: return [2 /*return*/];
                             }
                         });
                     }); })];

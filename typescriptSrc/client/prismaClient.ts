@@ -96,23 +96,40 @@ export async function getEmails(id: number) {
 }
 
 export async function getStats() {
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+
     try {
         const users = await prisma.user.findMany({
             select: {
             id: true,
             email: true,
-            recived: {
+            mails: {
                 select: {
-                id: true,
-                },
+                    createdAt: true,
+            }},
             },
-            },
+            where: {
+                mails:{
+                    some: {
+                        createdAt: {
+                            gte: startOfToday,
+                            lte: endOfToday
+                        }
+                    }
+                }
+            }
         });
-
+        
         const mailCountsByUser = users.map(user => ({
             userId: user.id,
             email: user.email,
-            mailCount: user.recived.length,
+            mailCount: {
+                count: user.mails.filter(mail => mail.createdAt >= startOfToday && mail.createdAt <= endOfToday).length,
+            },
         }));
 
         return mailCountsByUser;
