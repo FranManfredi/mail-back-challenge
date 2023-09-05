@@ -36,18 +36,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
-var prismaClient_js_1 = require("../client/prismaClient.js");
-var router = (0, express_1.Router)();
-router.get("/stats", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0:
-                _b = (_a = res.status(200)).send;
-                return [4 /*yield*/, (0, prismaClient_js_1.getStats)()];
-            case 1: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
-        }
+function tokenValidation(req, res, next) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            if (req.body.decodedToken.role !== "ADMIN") {
+                return [2 /*return*/, res.status(403).send("Invalid token")];
+            }
+            next();
+            return [2 /*return*/];
+        });
     });
-}); });
-exports.default = router;
+}
+exports.default = tokenValidation;

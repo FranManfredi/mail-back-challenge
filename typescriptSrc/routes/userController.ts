@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { validateToken, decodeToken} from "../client/jwtClient.js";
 import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../client/prismaClient.js";
-import mailgun = require('mailgun-js');
-import nodemailer = require('nodemailer');
+import mailgun = require("mailgun-js");
+import {createTransport} from "nodemailer";
+import { isTypeOfExpression } from "typescript";
 
 const router = Router();
 
@@ -12,7 +12,7 @@ const mg = mailgun({
   });
 
 
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
     host: "outlook.com",
     auth: {
         user: process.env.SMTP_MAIL ?? "",
@@ -20,41 +20,10 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-
-router.post("/sendEmail", async (req, res) => {
-    const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
-    const ftoken = req.headers.authorization ?? "";
-    if (ftoken === "") {
-        return res.status(403).send("Invalid token");
-    }
-    const token = ftoken.split(" ")[1];
-    
-    try {
-        await validateToken(token);
-    } catch (error) {
-        return res.status(403).send("Invalid token");
-    }
-
-    const decodedToken =  await decodeToken(token) as {role: string, username: string};
-
-    if ( !decodedToken ){
-        return res.status(401).send("User not found");
-    }
-
-    const user = await getUserByEmail( decodedToken.username );
-
-    const userTo = await getUsersByEmail(recivers);
-
-    if ( !user ){
-        return res.status(401).send("User not found");
-    }
-
-    if ( await getNumMailsToday( user.id ) >= 10 ) {
-        return res.status(400).send("You have reached the limit of 10 emails per day");
-    }
+async function sendEmails( email: string, subject: string, body: string, ids: number[], recivers: string[], res: any ){
 
     await mg.messages().send({
-        from: `${user.email} <${user.email}>`,
+        from: `${email} <${email}>`,
         to: recivers,
         subject: subject,
         text: body
@@ -63,7 +32,7 @@ router.post("/sendEmail", async (req, res) => {
         if (error) {
             console.log(error);
             transporter.sendMail({
-                from: `${user.email} <${process.env.SMTP_MAIL ?? ""}>`,
+                from: `${email} <${process.env.SMTP_MAIL ?? ""}>`,
                 to: recivers,
                 subject: subject,
                 text: body
@@ -74,47 +43,51 @@ router.post("/sendEmail", async (req, res) => {
                 }
                 else {
                     console.log(info);
-                    return res.status(200).send( await postEmail(user, subject, body, userTo));
+                    return res.status(200).send( await postEmail(email, subject, body, ids));
                 }
             });
         }
         else {
             console.log(thisbody);
-            return res.status(200).send( await postEmail(user, subject, body, userTo) );
+            return res.status(200).send( await postEmail(email, subject, body, ids) );
         }
     })
-});
+
+}
+
+router.post("/sendEmail", async (req, res) => {
+    const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
+
+    const user : any = await getUserByEmail( req.body.decodedToken.username ) ?? res.status(401).send("User not found");
+
+    if ( !subject || !body || !recivers ) {
+        return res.status(400).send("Missing fields");
+    }
+    else if ( typeof subject !== "string" || typeof body !== "string" ) {
+        return res.status(400).send("invalid fields");
+    }
+    else if (await getNumMailsToday( user.id ) >= 10 ) {
+        return res.status(400).send("You have reached the limit of 10 emails per day");
+    }
+
+    try {
+
+        const ids =  (await getUsersByEmail(recivers)).map((user: any) => user.id); // Array of ids from users
+
+        sendEmails(user.email, subject, body, ids, recivers, res);
+
+    }
+    catch (error) {
+        return res.status(400).send("One or more users not found");
+    }});
 
 router.get("/getEmails", async (req, res) => {
 
-    const ftoken = req.headers.authorization ?? "";
-    if (ftoken === "") {
-        return res.status(403).send("Invalid token");
-    }
-    const token = ftoken.split(" ")[1];
-    
-    try {
-        await validateToken(token);
-    } catch (error) {
-        return res.status(403).send("Invalid token");
-    }
+    const user : any = await getUserByEmail( req.body.decodedToken.username ) ?? res.status(401).send("User not found");
 
-    const decodedToken =  await decodeToken(token) as {role: string, username: string};
-
-    if ( !decodedToken ){
-        return res.status(401).send("User not found");
-    }
-
-    const user = await getUserByEmail( decodedToken.username );
-
-    if ( !user ){
-        return res.status(401).send("User not found");
-    }
     return res.status(200).send( await getEmails(user.id) );
     
 });
 
 
-
 export default router;
-

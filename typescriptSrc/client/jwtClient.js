@@ -38,14 +38,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodeToken = exports.validateToken = exports.generateToken = void 0;
-var JsonWebToken = require("jsonwebtoken");
-var jwt = JsonWebToken;
+var jsonwebtoken_1 = require("jsonwebtoken");
 var secret = (_a = process.env.JWT_SECRET_KEY) !== null && _a !== void 0 ? _a : "";
 function generateToken(user) {
     return __awaiter(this, void 0, void 0, function () {
         var token;
         return __generator(this, function (_a) {
-            token = jwt.sign({ role: user.role, username: user.email }, secret, { expiresIn: "1h" });
+            token = (0, jsonwebtoken_1.sign)({ role: user.role, username: user.email }, secret, { expiresIn: "1h" });
             return [2 /*return*/, token];
         });
     });
@@ -54,7 +53,7 @@ exports.generateToken = generateToken;
 function validateToken(token) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, jwt.verify(token, secret)];
+            return [2 /*return*/, (0, jsonwebtoken_1.verify)(token, secret)];
         });
     });
 }
@@ -62,9 +61,9 @@ exports.validateToken = validateToken;
 function decodeToken(token) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, jwt.decode(token)];
+            return [2 /*return*/, (0, jsonwebtoken_1.decode)(token)];
         });
     });
 }
 exports.decodeToken = decodeToken;
-exports.default = jwt;
+exports.default = { generateToken: generateToken, validateToken: validateToken, decodeToken: decodeToken };

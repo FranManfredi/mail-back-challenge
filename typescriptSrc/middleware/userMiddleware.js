@@ -36,18 +36,37 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = require("express");
-var prismaClient_js_1 = require("../client/prismaClient.js");
-var router = (0, express_1.Router)();
-router.get("/stats", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+var jwtClient_1 = require("../client/jwtClient");
+function tokenValidation(req, res, next) {
     var _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0:
-                _b = (_a = res.status(200)).send;
-                return [4 /*yield*/, (0, prismaClient_js_1.getStats)()];
-            case 1: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
-        }
+    return __awaiter(this, void 0, void 0, function () {
+        var myToken, token, error_1, decodedToken;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    myToken = (_a = req.headers.authorization) !== null && _a !== void 0 ? _a : "";
+                    if (myToken === "") {
+                        return [2 /*return*/, res.status(403).send("Invalid token")];
+                    }
+                    token = myToken.split(" ")[1];
+                    _c.label = 1;
+                case 1:
+                    _c.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, (0, jwtClient_1.validateToken)(token)];
+                case 2:
+                    _c.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_1 = _c.sent();
+                    return [2 /*return*/, res.status(403).send("Invalid token")];
+                case 4: return [4 /*yield*/, (0, jwtClient_1.decodeToken)(token)];
+                case 5:
+                    decodedToken = (_b = _c.sent()) !== null && _b !== void 0 ? _b : res.status(403).send("Invalid token");
+                    req.body.decodedToken = decodedToken;
+                    next();
+                    return [2 /*return*/];
+            }
+        });
     });
-}); });
-exports.default = router;
+}
+exports.default = tokenValidation;

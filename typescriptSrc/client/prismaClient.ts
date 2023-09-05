@@ -29,6 +29,9 @@ export async function getUsersByEmail(emails: string[]) {
             }
         },
     });
+    if (users.length != emails.length) {
+        throw new Error("invalid recivers");
+    }
     return users;
 }
 
@@ -52,17 +55,17 @@ export async function getNumMailsToday(id: number){
     return mails.length;
 } 
 
-export async function postEmail(from: {id: number}, subject: string, body: string, to : {id: number}[]) {
+export async function postEmail(from: string, subject: string, body: string, to : number[]) {
     const newEmail = await prisma.mails.create({
         data: {
             from: {
-                connect: { id: from.id }
+                connect: { email: from }
             },
             subject: subject,
             body,
             to: {
                 createMany: {
-                    data: to.map((user) => ({userId: user.id}))
+                    data: to.map((ids) => ({userId: ids}))
                 }
             }
         },

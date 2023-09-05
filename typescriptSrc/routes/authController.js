@@ -37,31 +37,32 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
-var bcrypt = require("bcrypt");
+var bcrypt_1 = require("bcrypt");
 var prismaClient_js_1 = require("../client/prismaClient.js");
 var jwtClient_js_1 = require("../client/jwtClient.js");
-var bit = bcrypt;
 var router = (0, express_1.Router)();
 router.post("/register", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, email, password, user, newPassword, myUser, token;
+    var _a, email, password, newPassword, myUser, token;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 _a = req.body, email = _a.email, password = _a.password;
-                return [4 /*yield*/, (0, prismaClient_js_1.getUserByEmail)(email)];
-            case 1:
-                user = _b.sent();
-                if (user) {
+                if (!(email == null || password == null || typeof email !== "string" || typeof password !== "string")) return [3 /*break*/, 1];
+                return [2 /*return*/, res.status(400).send("Invalid email or password")];
+            case 1: return [4 /*yield*/, (0, prismaClient_js_1.getUserByEmail)(email)];
+            case 2:
+                if ((_b.sent()) != null) {
                     return [2 /*return*/, res.status(401).send("User already exists")];
                 }
-                return [4 /*yield*/, bit.hash(password, 10)];
-            case 2:
+                _b.label = 3;
+            case 3: return [4 /*yield*/, (0, bcrypt_1.hash)(password, 10)];
+            case 4:
                 newPassword = _b.sent();
                 return [4 /*yield*/, (0, prismaClient_js_1.postUser)(email, newPassword)];
-            case 3:
+            case 5:
                 myUser = _b.sent();
                 return [4 /*yield*/, (0, jwtClient_js_1.generateToken)(myUser)];
-            case 4:
+            case 6:
                 token = _b.sent();
                 res.send(token);
                 return [2 /*return*/];
@@ -74,12 +75,15 @@ router.get("/login", function (req, res) { return __awaiter(void 0, void 0, void
         switch (_b.label) {
             case 0:
                 _a = req.body, email = _a.email, password = _a.password;
+                if (email == null || password == null || typeof email !== "string" || typeof password !== "string") {
+                    return [2 /*return*/, res.status(400).send("Invalid email or password")];
+                }
                 return [4 /*yield*/, (0, prismaClient_js_1.getUserByEmail)(email)];
             case 1:
                 user = _b.sent();
                 if (!!user) return [3 /*break*/, 2];
                 return [2 /*return*/, res.status(401).send("Invalid username or password")];
-            case 2: return [4 /*yield*/, bit.compare(password, user.password)];
+            case 2: return [4 /*yield*/, (0, bcrypt_1.compare)(password, user.password)];
             case 3:
                 if (!(_b.sent())) {
                     return [2 /*return*/, res.status(401).send("Invalid username or password")];

@@ -90,6 +90,9 @@ function getUsersByEmail(emails) {
                     })];
                 case 1:
                     users = _a.sent();
+                    if (users.length != emails.length) {
+                        throw new Error("invalid recivers");
+                    }
                     return [2 /*return*/, users];
             }
         });
@@ -132,13 +135,13 @@ function postEmail(from, subject, body, to) {
                 case 0: return [4 /*yield*/, prisma.mails.create({
                         data: {
                             from: {
-                                connect: { id: from.id }
+                                connect: { email: from }
                             },
                             subject: subject,
                             body: body,
                             to: {
                                 createMany: {
-                                    data: to.map(function (user) { return ({ userId: user.id }); })
+                                    data: to.map(function (ids) { return ({ userId: ids }); })
                                 }
                             }
                         },
