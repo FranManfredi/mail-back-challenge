@@ -89,5 +89,4 @@ router.get("/getEmails", async (req, res) => {
     
 });
 
-
 export default router;
