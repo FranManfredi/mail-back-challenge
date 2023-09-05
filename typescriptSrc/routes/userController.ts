@@ -54,7 +54,7 @@ router.post("/sendEmail", async (req, res) => {
     }
 
     await mg.messages().send({
-        from: `emailChallenge <${user.email}>`,
+        from: `${user.email} <${user.email}>`,
         to: recivers,
         subject: subject,
         text: body
