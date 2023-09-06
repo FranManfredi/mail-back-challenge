@@ -5,7 +5,6 @@ import { generateToken } from "../client/jwtClient.js";
 
 const router = Router();
 
-
 router.post("/register", async (req, res) => {
     const {email , password}:{email:string, password:string} = req.body;
 

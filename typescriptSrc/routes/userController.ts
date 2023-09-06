@@ -1,92 +1,69 @@
 import { Router } from "express";
-import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday} from "../client/prismaClient.js";
-import mailgun = require("mailgun-js");
-import {createTransport} from "nodemailer";
-import { isTypeOfExpression } from "typescript";
+import { getUserByEmail, getUsersByEmail, postEmail, getEmails, getNumMailsToday } from "../client/prismaClient.js";
+import { mailgunEmail, nodeMailerEmail } from "../client/mailClient.js";
+
+const mg = new mailgunEmail(); // Instancia de la clase mailgunEmail
+const nm = new nodeMailerEmail(); // Instancia de la clase nodeMailerEmail
 
 const router = Router();
 
-const mg = mailgun({
-    apiKey: process.env.MAILGUN_API_KEY ?? "",
-    domain: process.env.MAILGUN_DOMAIN ?? "",
-  });
+router.post("/sendEmail", async (req, res) => {
+  const { subject, body, recivers }: { subject: string, body: string, recivers: string[] } = req.body;
 
+  const user: any = await getUserByEmail(req.body.decodedToken.username) ?? res.status(401).send("User not found");
 
-const transporter = createTransport({
-    host: "outlook.com",
-    auth: {
-        user: process.env.SMTP_MAIL ?? "",
-        pass: process.env.SMTP_PASS ?? ""
-    }
+  
+  if (!subject || !body || !recivers) { // Comprueba que los campos no estén vacíos
+    return res.status(400).send("Missing fields");
+  }
+  else if (typeof subject !== "string" || typeof body !== "string") { // Comprueba que los campos sean del tipo correcto
+    return res.status(400).send("invalid fields");
+  }
+  else if (await getNumMailsToday(user.id) >= 10) { // Comprueba que el usuario no haya enviado más de 10 emails en el día
+    return res.status(400).send("You have reached the limit of 10 emails per day");
+  }
+
+  try {
+
+    const ids = (await getUsersByEmail(recivers)).map((user: any) => user.id); // Array de ids de los users a los que se les va a enviar el email (si existen TODOS los emails puestos)
+
+    await trySendEmails(user.email, subject, body, ids, recivers, res); // Intenta enviar el correo electrónico con la implementación 'mg' o 'nm'
+
+  }
+  catch (error) {
+    return res.status(400).send("One or more users not found"); // Si el array falla, devuelve una respuesta de error
+  }
 });
 
-async function sendEmails( email: string, subject: string, body: string, ids: number[], recivers: string[], res: any ){
+router.get("/getEmails", async (req, res) => { 
 
-    await mg.messages().send({
-        from: `${email} <${email}>`,
-        to: recivers,
-        subject: subject,
-        text: body
-    }
-    , async (error, thisbody) => {
-        if (error) {
-            console.log(error);
-            transporter.sendMail({
-                from: `${email} <${process.env.SMTP_MAIL ?? ""}>`,
-                to: recivers,
-                subject: subject,
-                text: body
-            }, async (err, info) => {
-                if (err) {
-                    console.log(err);
-                    return res.status(400).send(err);
-                }
-                else {
-                    console.log(info);
-                    return res.status(200).send( await postEmail(email, subject, body, ids));
-                }
-            });
-        }
-        else {
-            console.log(thisbody);
-            return res.status(200).send( await postEmail(email, subject, body, ids) );
-        }
-    })
+  const user: any = await getUserByEmail(req.body.decodedToken.username) ?? res.status(401).send("User not found"); // Comprueba que el usuario exista
 
-}
+  return res.status(200).send(await getEmails(user.id)); // Devuelve los emails del usuario
 
-router.post("/sendEmail", async (req, res) => {
-    const {subject, body, recivers} : {subject: string, body: string, recivers:string[]} = req.body;
+});
 
-    const user : any = await getUserByEmail( req.body.decodedToken.username ) ?? res.status(401).send("User not found");
-
-    if ( !subject || !body || !recivers ) {
-        return res.status(400).send("Missing fields");
-    }
-    else if ( typeof subject !== "string" || typeof body !== "string" ) {
-        return res.status(400).send("invalid fields");
-    }
-    else if (await getNumMailsToday( user.id ) >= 10 ) {
-        return res.status(400).send("You have reached the limit of 10 emails per day");
-    }
-
+async function trySendEmails(email: string, subject: string, body: string, ids: number[], recivers: string[], res: any) {
+  try {
+    
+    await mg.sendEmails(email, subject, body, ids, recivers);// Intenta enviar el correo electrónico con la implementación 'mg'
+    
+    return res.status(200).send(await postEmail(email, subject, body, ids));// Si tiene éxito, devuelve una respuesta exitosa
+  } catch (mgError) { // Si falla, intenta con la implementación 'nm'
+    console.log("Error with Mailgun:", mgError);
     try {
 
-        const ids =  (await getUsersByEmail(recivers)).map((user: any) => user.id); // Array of ids from users
+      await nm.sendEmails(email, subject, body, ids, recivers);  // Intenta enviar el correo electrónico con la implementación 'nm'
 
-        sendEmails(user.email, subject, body, ids, recivers, res);
+      return res.status(200).send(await postEmail(email, subject, body, ids)); // Si tiene éxito, devuelve una respuesta exitosa
+
+    } catch (nmError) { // Si falla, devuelve una respuesta de error
+      console.log("Error with NodeMailer:", nmError);
+
+      return res.status(400).send("One or more users not found");// Si ambos intentos fallan, devuelve una respuesta de error
 
     }
-    catch (error) {
-        return res.status(400).send("One or more users not found");
-    }});
-
-router.get("/getEmails", async (req, res) => {
-
-    const user : any = await getUserByEmail( req.body.decodedToken.username ) ?? res.status(401).send("User not found");
-
-    return res.status(200).send( await getEmails(user.id) );
-    
-});
+  }
+}
 
 export default router;
